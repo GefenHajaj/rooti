@@ -189,7 +189,7 @@ static int register_icmp_listener(void)
 		debugPrint("Linux version high");
     	ret = nf_register_net_hook(&init_net, netf_hook);
 	#else
-    	ret = nf_register_hook(&netf_hook);
+    	ret = nf_register_hook(netf_hook);
 	#endif
 
 	// ret = nf_register_hook(&netf_hook);
@@ -204,9 +204,9 @@ static int register_icmp_listener(void)
 // Not tested.
 void unregister_icmp_listener(void) {
 	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,13,0)
-    	nf_register_net_hook(&init_net, &netf_hook);
+    	nf_register_net_hook(&init_net, netf_hook);
 	#else
-    	nf_register_hook(&netf_hook);
+    	nf_register_hook(netf_hook);
 	#endif
 }
 
