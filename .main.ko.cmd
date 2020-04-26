@@ -1,1 +1,0 @@
-cmd_/home/gefen/backdoor/rooti/main.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000 -T ./scripts/module-common.lds  --build-id  -o /home/gefen/backdoor/rooti/main.ko /home/gefen/backdoor/rooti/main.o /home/gefen/backdoor/rooti/main.mod.o ;  true
