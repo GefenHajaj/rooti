@@ -96,6 +96,8 @@ def start_listening_terminal(listen_port, ssl=True):
     :param ssl: bool
     :return: None
     """
+    print("This function is not yet working!!!")
+    
     # Create the main command to run in the new terminal
     ncat_command = "{} -vklp {}".format(NCAT_PATH, listen_port)
     ncat_command = ncat_command + " --ssl" if ssl else ncat_command
