@@ -143,7 +143,7 @@ def hack_it():
     # time.sleep(3)
 
     # Create and send magic packet
-    p = generate_magic_packet(DEST_IP)  # tcp=False
+    p = generate_magic_packet(input("Dest IP: "), tcp=bool(input("tcp? (1/0)")))
     send(p)
 
     # Enjoy :)
