@@ -4,3 +4,11 @@ Options to make reverse shell:
 Change the snprintf(command ...) in main.c
 to:
 snprintf(command, 100, "<path-to-binary> %s", IP);
+
+- option 2 in classic binary - use openssl. Very similar to ncat option, but useful in cases we only have openssl and not the new nc/ncat.
+
+- Other option - socat. Not recommended...
+Look at "reverse shell cheat sheet":
+https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md
+- How to secure it with ssl:
+http://www.dest-unreach.org/socat/doc/socat-openssltunnel.html
