@@ -1,0 +1,20 @@
+Ubuntu:
+apt-get install build-essential linux-headers-`uname -r`
+apt-get install make gcc
+
+Debian:
+apt-get install build-essential linux-headers-`uname -r`
+apt-get install make gcc
+
+WORKS ONLY WITH CUSTOM BINARY. NOT NCAT!
+
+CentOS:
+yum install kernel-devel
+yum install make
+yum install gcc
+yum install elfutils-libelf-devel
+
+WORKS ONLY WITH CUSTOM BINARY. NOT NCAT!
+
+Solutions for reverse shell that works for all:
+- Binary that runs classic ncat shell (mkfifo)
