@@ -1,0 +1,25 @@
+UBUNTU, DEBIAN:
+1. Copy the compiled LKM (.ko file) to a directory in 
+/lib/modules/`uname -r`/kernel/drivers.
+
+Search for a module that is already loaded (so you know the driver works) and add the .ko file to the dir of the already loaded LKM.
+
+For example, I saw that I had a LKM loaded called mptbase (lsmod).
+Find . | grep -i mptbase
+And I found this dir:
+/lib/modules/`uname -r`/kernel/drivers/message/fusion.
+Add our .ko file to there.
+
+2. Add the name of out LKM (WITHOUT the .km in the end) to the file
+/etc/modules (same as /etc/modules-load.d/modules.conf).
+
+3. Run "depmod" to make sure we have all we need for our module (all dependencies).
+
+4. Reboot and make sure our module is running (lsmod | grep -i <name>)
+
+WORKS ONLY IF THE SYSTEMD-MODULES-LOAD SERVICE RUNS!
+systemctl status systemd-modules-load.service - MAKE SURE IT RUNS
+
+For CentOS:
+1. The same thing, only we need to add "modules.conf" to /etc/modules-load.d. Add our LKM name there.
+2. Do all the other steps.
