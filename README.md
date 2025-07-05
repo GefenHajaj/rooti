@@ -1,6 +1,6 @@
 # rooti
-Cool little backdoor for linux.
-This is a kernel module that is triggered by a specially crafted network packet.
+Cool little backdoor for linux.  
+This is a kernel module that is triggered by a specially crafted network packet.  
 Use with caution!
 
 # Installation and requierments
